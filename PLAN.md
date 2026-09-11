@@ -15,6 +15,11 @@ even when retrieval is perfect and the irrelevant tokens are masked out
 accuracy on top of that (arXiv:2505.06914). So the headline metric is answer
 accuracy against tokens delivered, and ranking metrics are diagnostics under it.
 
+The store is multilingual and cross-lingual by default. Queries arrive in Turkish
+against memories written in English, and that combination is the normal case
+rather than an edge one, so it is a property of every phase below rather than a
+section of its own.
+
 ## Phase 0 — measure before building
 
 Nothing lands before there is something to measure it with, because the project
@@ -27,6 +32,17 @@ comparability with published work. Roughly 100 hand-labelled queries over real
 codemem notes from this machine give us the workload we actually serve, which is
 short authored fragments dense with identifiers and `file:line` references. The
 two disagree by design; when they do, ours decides and LongMemEval explains.
+
+Our set is cross-lingual, because the workload is. Users ask in Turkish about
+notes written in English, so a query and the memory that answers it routinely
+share no surface tokens at all. That case has to be labelled in the corpus from
+the first commit rather than added once monolingual numbers look good — a
+retriever tuned on same-language pairs will score well and then fail in normal
+use. The set therefore carries three groups sized deliberately: same-language
+English, same-language Turkish, and cross-lingual TR query against EN memory. The
+harness reports every metric per group as well as pooled, because a pooled
+average will hide a cross-lingual collapse behind two healthy monolingual
+numbers.
 
 The harness reports nDCG@10, Recall@k and MRR, plus tokens delivered at the
 chosen cut and end-to-end latency. It also records abstention behaviour, because
@@ -52,16 +68,37 @@ reaches 0.6940; each channel rescues queries the other loses entirely
 (sesen.ai, 300 queries). On identifier-heavy corpora BM25 beats SOTA dense
 outright (arXiv:2604.01733). Our notes are identifier-heavy.
 
+Multilingual pulls the two channels apart, and the fusion has to be tuned knowing
+that. Lexical matching degrades to near nothing across a language boundary except
+on the identifiers that survive translation, while the dense channel carries
+whatever cross-lingual signal exists. So the same RRF weighting cannot be right
+for both same-language and cross-lingual queries, and Phase 1 measures them
+separately before picking one. The observed failure in codemem is exactly this:
+FTS and text overlap dominate its scoring, so a Turkish query against English
+notes returns `sem:0` and falls back to nothing useful unless the caller happens
+to include English domain terms.
+
+Every model in the stack must be multilingual, not the English default. The
+encoder needs symmetric treatment of both languages and the E5 family's
+`query:` / `passage:` prefixes have to be applied — codemem embeds without them,
+which costs cross-lingual recall. If a reranker enters in Phase 2 it must be
+multilingual too; an English cross-encoder over Turkish queries is the domain
+mismatch of arXiv:2608.03860 with the language axis added.
+
 Embeddings come from OmniRoute at `http://localhost:20128/v1`, OpenAI-compatible,
 key from `OMNIROUTE_API_KEY` — never committed, never stored in the memory DB.
 Verified working this session: `gemini/gemini-embedding-001` returns 3072 dims;
 `openai/text-embedding-3-small` answered 429 under load; `nvidia/nv-embedqa-e5-v5`
-answered 410. CI must not depend on any of them: a local CPU encoder
-(all-MiniLM-L6-v2 class, 384 dims) is the offline path, and the GPU is shared, so
-`nvidia-smi` gets checked before anything loads a model locally.
+answered 410. CI must not depend on any of them: rate limits and dead model IDs
+make them non-deterministic. The offline path is a local CPU encoder, and it has
+to be a multilingual one — `multilingual-e5-small` (384 dims, 512-token window,
+250k vocab, what codemem runs today) rather than the English `all-MiniLM-L6-v2`,
+so that a CI run and a production run can fail the same way. The GPU is shared,
+so `nvidia-smi` gets checked before anything loads a model locally.
 
 Done when: Phase 0 harness reports a real number for hybrid, dense-only and
-lexical-only, and the commit message carries all three.
+lexical-only, broken out per language group, and the commit message carries all
+of them.
 
 ## Phase 2 — contextual indexing and reranking
 
@@ -102,6 +139,15 @@ policy": +10.8pp average, +21pp at 262K context, with the policy executor itself
 worth only 2.0pp of that (arXiv:2606.01435). Whether that survives contact with
 our workload is a Phase 3 measurement.
 
+If the cross-lingual group is still the weak one after Phase 2, this is where
+query-side translation gets tested: send the query to both channels in its own
+language and in the corpus language, and fuse. It is deliberately later than the
+encoder and the fusion weights, because it adds a model call to every read and
+should only buy its latency if a cheaper fix has already failed. Note that
+query expansion measured *limited* benefit for precise queries while
+contextualisation gave consistent gains (arXiv:2604.01733), so the expectation
+here is modest.
+
 ## Phase 4 — the write path
 
 Origin gets bound when a memory is written, not inferred when it is read. This is
@@ -138,6 +184,10 @@ unsettled.
 
 No second implementation kept alongside a winner. When a comparison answers, the
 loser is deleted.
+
+No English-only model anywhere in the stack, including in CI. That is not a
+future feature to bolt on; a monolingual encoder makes the cross-lingual group
+unmeasurable, and unmeasured is how it stays broken.
 
 ## Invariants
 
