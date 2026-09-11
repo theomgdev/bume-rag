@@ -78,23 +78,47 @@ FTS and text overlap dominate its scoring, so a Turkish query against English
 notes returns `sem:0` and falls back to nothing useful unless the caller happens
 to include English domain terms.
 
-Every model in the stack must be multilingual, not the English default. The
-encoder needs symmetric treatment of both languages and the E5 family's
-`query:` / `passage:` prefixes have to be applied — codemem embeds without them,
-which costs cross-lingual recall. If a reranker enters in Phase 2 it must be
-multilingual too; an English cross-encoder over Turkish queries is the domain
-mismatch of arXiv:2608.03860 with the language axis added.
+Every model in the stack must be multilingual, not the English default, and
+whatever prefix or instruction scheme it was trained with has to be applied.
+codemem embeds without E5's `query:` / `passage:` prefixes and pays for it in
+cross-lingual recall; the same mistake is available with any instruction-tuned
+encoder. If a reranker enters in Phase 2 it must be multilingual too; an English
+cross-encoder over Turkish queries is the domain mismatch of arXiv:2608.03860
+with the language axis added.
 
 Embeddings come from OmniRoute at `http://localhost:20128/v1`, OpenAI-compatible,
 key from `OMNIROUTE_API_KEY` — never committed, never stored in the memory DB.
 Verified working this session: `gemini/gemini-embedding-001` returns 3072 dims;
 `openai/text-embedding-3-small` answered 429 under load; `nvidia/nv-embedqa-e5-v5`
 answered 410. CI must not depend on any of them: rate limits and dead model IDs
-make them non-deterministic. The offline path is a local CPU encoder, and it has
-to be a multilingual one — `multilingual-e5-small` (384 dims, 512-token window,
-250k vocab, what codemem runs today) rather than the English `all-MiniLM-L6-v2`,
-so that a CI run and a production run can fail the same way. The GPU is shared,
-so `nvidia-smi` gets checked before anything loads a model locally.
+make them non-deterministic, and embedding 212 texts cost six backoffs and 278 s.
+
+The local encoder is `microsoft/harrier-oss-v1-0.6b`: 0.6B parameters, 1024 dims,
+a 32k-token window, MIT, 94 languages including Turkish, and MTEB v2 69.0 on the
+multilingual board. It replaces `multilingual-e5-small` in the plan because it
+removes the reason the cloud had to be the default — a local model that competes
+with the hosted one turns the API key into a preference rather than a
+requirement. The 1.2 GB of weights are too large for CI, so the hashing stand-in
+stays as the no-download path and the two are not the same thing: one is a real
+encoder, the other exists to exercise the code.
+
+It has two properties that silently cost accuracy if missed, both the same shape
+as the E5 prefix bug in codemem. Queries need a one-sentence instruction —
+`config_sentence_transformers.json` ships `web_search_query` and friends but sets
+`default_prompt_name` to null, so plain `encode()` adds nothing and the model
+card says performance degrades. Documents take no instruction at all, so the
+asymmetry is the thing to get right. And pooling is last-token, not mean; the
+config declares it, but anything that reimplements pooling has to match.
+
+GGUF is a deliverable rather than a note: `llama.cpp` runtimes reach hardware and
+languages that torch does not, and Q8_0 is 610 MiB against 1.12 GiB for BF16.
+It lands as its own phase behind the same rule as everything else — the
+quantisation that ships is the one measured on our suites, not the one with the
+best table elsewhere. Quantisation error and retrieval quality are different
+questions, and published throughput numbers say nothing about either.
+
+The GPU is shared, so `nvidia-smi` gets checked before anything loads a model
+locally, and the local path must keep working on CPU.
 
 Done when: Phase 0 harness reports a real number for hybrid, dense-only and
 lexical-only, broken out per language group, and the commit message carries all
@@ -147,6 +171,23 @@ should only buy its latency if a cheaper fix has already failed. Note that
 query expansion measured *limited* benefit for precise queries while
 contextualisation gave consistent gains (arXiv:2604.01733), so the expectation
 here is modest.
+
+## Phase 3.5 — GGUF
+
+The local encoder in Phase 1 is a torch checkpoint, which means a CUDA-sized
+install to run a 0.6B model and no path onto hardware torch does not serve.
+`llama.cpp` runtimes take GGUF, and quantisation makes the model small enough to
+be incidental: Q8_0 is 610 MiB and Q4_K_M 378 MiB against 1.12 GiB for BF16.
+
+Which quantisation ships is a measurement on our suites, not a size preference.
+Published throughput tables say nothing about retrieval quality, and the two
+questions come apart — a quant can lose almost nothing in perplexity while moving
+enough in embedding space to reorder a ranked list. The dense channel is scored
+against every candidate quant and the one that holds its numbers wins; the rest
+are not kept as options.
+
+The instruction prefix and last-token pooling have to survive the port, because
+a runtime that pools differently produces vectors that look fine and rank wrong.
 
 ## Phase 4 — the write path
 
