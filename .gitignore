@@ -1,0 +1,10 @@
+# Per-tool assistant instruction files stay local. AGENTS.md is the contract.
+CLAUDE.md
+CURSOR.md
+GEMINI.md
+COPILOT.md
+.claude/
+.cursor/
+.aider*
+.windsurfrules
+.github/copilot-instructions.md
