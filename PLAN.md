@@ -33,6 +33,17 @@ codemem notes from this machine give us the workload we actually serve, which is
 short authored fragments dense with identifiers and `file:line` references. The
 two disagree by design; when they do, ours decides and LongMemEval explains.
 
+Neither is built yet, and the second one has a problem the first does not: this
+repository is public and those notes are somebody's real work. A scan of the 224
+notes on this machine found no keys or tokens, but 25 carry a home directory
+path, three carry email addresses, and they span client projects as well as open
+source ones. The options are a generator that reads a local memory store so the
+corpus is never committed, publishing only the notes that were already public
+work, or redacting everything and publishing it. That choice is the user's and it
+blocks the corpus, not the harness — everything below is measured on `seed`,
+which is thirteen memories and exists to exercise the code rather than to rank
+anything.
+
 Our set is cross-lingual, because the workload is. Users ask in Turkish about
 notes written in English, so a query and the memory that answers it routinely
 share no surface tokens at all. That case has to be labelled in the corpus from
@@ -50,7 +61,8 @@ LongMemEval scores it and because a store that cannot say "nothing here" pollute
 the turn it was meant to help.
 
 Done when: `bume bench` runs both suites against a retriever that returns
-nothing, and prints a table of zeros without crashing.
+nothing, and prints a table of zeros without crashing. **Landed** in `4015e3d`
+against `seed`; the two real suites are still outstanding.
 
 ## Phase 1 — the honest baseline
 
@@ -122,7 +134,48 @@ locally, and the local path must keep working on CPU.
 
 Done when: Phase 0 harness reports a real number for hybrid, dense-only and
 lexical-only, broken out per language group, and the commit message carries all
-of them.
+of them. **Landed** across `ac9dc12`, `1f6b603` and `b210410`.
+
+### Where Phase 1 actually got to
+
+Everything here is nDCG@10 on `seed`, which is thirteen memories and twenty
+queries. It is enough to show a channel is broken and nowhere near enough to
+rank two that both work, so these are directional and the real corpus replaces
+them.
+
+| retriever | pooled | cross |
+| --- | --- | --- |
+| no-op | 0.0000 | 0.0000 |
+| lexical (BM25) | 0.7812 | 0.5000 |
+| hybrid, hashing stand-in | 0.8519 | 0.6389 |
+| dense, harrier local | 0.8788 | 0.6363 |
+| hybrid, harrier local | 0.8860 | 0.7196 |
+| hybrid, cloud embeddings | 0.9590 | 0.8770 |
+
+Three things are unresolved and should not be guessed at later.
+
+Whether the lexical channel earns its place is still open. Fusing it with cloud
+embeddings changed nothing at all — RRF scored identically to dense alone — while
+fusing it with the local encoder lifted the cross-lingual group from 0.6363 to
+0.7196. An attempt to settle it on a harder corpus, by adding the other 212 notes
+as distractors, produced a contaminated result: the seed memories were written
+*from* those notes, so the distractors are near-duplicates of the gold and dense
+was marked wrong for returning a correct answer under a different id. Measured
+cosine between the rank-1 result and the gold text was 0.90, 0.83, 0.75. A clean
+corpus is the only thing that answers this.
+
+Abstention is unsolved and no threshold will solve it. The query nothing in the
+corpus answers scores *above* three genuine answers on both channels — BM25 2.269
+against gold scores of 1.867 to 2.359, and cosine 0.5627 against a genuine range
+of 0.5854 to 0.8654. The false positive sits inside the true distribution on
+both, which is the argument for ranked-list truncation in Phase 3 rather than a
+cutoff.
+
+The cloud still beats the local encoder on the cross-lingual group, 0.8770 to
+0.6363, and that is the group that matters most here. Recall@10 is 1.0 for both,
+so the gold is always retrieved and merely ranked worse. Whether that survives a
+real corpus decides whether the API key is optional in practice or only in
+principle.
 
 ## Phase 2 — contextual indexing and reranking
 

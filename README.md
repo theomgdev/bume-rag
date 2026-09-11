@@ -4,10 +4,12 @@ A retrieval-augmented memory tool: a Python library with a CLI on top, meant to
 be the store an agent reads from at the start of a turn and writes to at the end
 of it.
 
-Status: early development. What exists is a benchmark harness and a hybrid
-retriever — BM25 over SQLite FTS5 fused with embeddings by reciprocal rank. The
-contract is in [`AGENTS.md`](AGENTS.md) and the phase order in
-[`PLAN.md`](PLAN.md).
+Status: early development, and `bench` is the only command. What exists is the
+benchmark harness and a hybrid retriever — BM25 over SQLite FTS5 fused with
+embeddings by reciprocal rank — which is the retrieval half. There is no store to
+write to yet, so this is not usable as a memory tool today. The contract is in
+[`AGENTS.md`](AGENTS.md) and the phase order, with what has landed and what is
+still open, in [`PLAN.md`](PLAN.md).
 
 ## What it is for
 
