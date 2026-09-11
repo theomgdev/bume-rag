@@ -260,10 +260,21 @@ per vendor has already lost the thing they were meant to protect.
 
 ## Project specifics
 
-bume-rag is a retrieval-augmented memory store: a Python library with a CLI on
-top. There is no source tree yet, so there is no build or test command to give —
-add both here in the same change that adds the first module, and say how long a
-run takes.
+bume-rag is a retrieval-augmented memory store: a Python library in
+`src/bume_rag` with a `bume` CLI on top. `uv run --group dev pytest -q` runs the
+tests in about 0.35 s, and `uv run bume bench` runs every suite under
+`benchmarks/` in well under a second. Both grow as phases land; keep the timing
+here honest, and add a phase's command in the same change as its code.
+
+`PLAN.md` holds the phase order and the reason for it. Read it before adding a
+retrieval method, because most of what looks worth adding is listed there as
+deliberately absent along with the measurement that says so.
+
+The benchmark corpus is cross-lingual by construction: queries arrive in Turkish
+against memories written in English, and every metric is reported per language
+group as well as pooled. A pooled average hides a cross-lingual collapse behind
+two healthy monolingual numbers, so read the groups, not the total. No
+English-only model belongs anywhere in the stack, including in CI.
 
 The thing being optimised is the context budget of the turn that reads from the
 store, which means precision beats recall: a retrieved chunk that does not

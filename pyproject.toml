@@ -1,0 +1,24 @@
+[project]
+name = "bume-rag"
+version = "0.0.0"
+description = "A retrieval-augmented memory store optimised for the context budget of the turn that reads it"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.13"
+dependencies = []
+
+[project.scripts]
+bume = "bume_rag.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bume_rag"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,19 @@
+{"id": "q-en-1", "language": "en", "text": "which constant controls how much NPC gear-up weights coverage against encumbrance", "gold": ["m-gearup-score"]}
+{"id": "q-en-2", "language": "en", "text": "why can an NPC wear two pairs of glasses", "gold": ["m-worn-per-type"]}
+{"id": "q-en-3", "language": "en", "text": "the save files end up in the wrong folder when launched from a shortcut", "gold": ["m-user-dir"]}
+{"id": "q-en-4", "language": "en", "text": "setting RENDERER in options.json does nothing on windows", "gold": ["m-renderer"]}
+{"id": "q-en-5", "language": "en", "text": "what happens if CODEMEM_EMBEDDING_MODEL is not set", "gold": ["m-embed-default"]}
+{"id": "q-en-6", "language": "en", "text": "can I switch codemem to a 768 dimension embedding model", "gold": ["m-vec-dim", "m-embed-default"]}
+{"id": "q-en-7", "language": "en", "text": "python script prints nothing until it finishes in powershell", "gold": ["m-ps-select"]}
+{"id": "q-en-8", "language": "en", "text": "is it safe to uninstall visual studio 2019", "gold": ["m-nvcc-msvc"]}
+{"id": "q-tr-1", "language": "tr", "text": "konsolda turkce karakterler neden bozuk cikiyor", "gold": ["m-tr-encoding"]}
+{"id": "q-tr-2", "language": "tr", "text": "uzun suren bir egitimi baslatmadan once neye bakmaliyim", "gold": ["m-tr-gpu"]}
+{"id": "q-tr-3", "language": "tr", "text": "commit mesaji yazarken metin neden bozuluyor", "gold": ["m-tr-commit"]}
+{"id": "q-x-1", "language": "tr", "text": "npc giyinme puanlamasinda ortu payini yuk cezasina karsi hangi sabit ayarliyor", "gold": ["m-gearup-score"]}
+{"id": "q-x-2", "language": "tr", "text": "kayit dosyalari neden yanlis klasore gidiyor", "gold": ["m-user-dir"]}
+{"id": "q-x-3", "language": "tr", "text": "gomme modelini 768 boyutluya cevirebilir miyim", "gold": ["m-vec-dim"]}
+{"id": "q-x-4", "language": "tr", "text": "wsl icine kaynak kopyalarken ninja neden degisiklik gormuyor", "gold": ["m-rsync-checksum"]}
+{"id": "q-x-5", "language": "tr", "text": "iki kanali birlestirirken hangi sabiti kullaniyoruz", "gold": ["m-rrf-k"]}
+{"id": "q-x-6", "language": "tr", "text": "ekran surucusu secimi ayar dosyasindan neden degismiyor", "gold": ["m-renderer"]}
+{"id": "q-abs-1", "language": "en", "text": "what is the postgres connection string for the staging cluster", "gold": [], "note": "nothing in the corpus is about postgres; the store should return nothing"}
+{"id": "q-abs-2", "language": "tr", "text": "kubernetes ingress sertifikasi nasil yenileniyor", "gold": [], "note": "no kubernetes memory exists; abstention case in Turkish"}

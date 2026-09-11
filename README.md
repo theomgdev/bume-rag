@@ -4,9 +4,10 @@ A retrieval-augmented memory tool: a Python library with a CLI on top, meant to
 be the store an agent reads from at the start of a turn and writes to at the end
 of it.
 
-Status: early development. There is no code in this repository yet — only the
-contract in [`AGENTS.md`](AGENTS.md) and this statement of intent. Nothing here
-has been benchmarked, so nothing here claims a number.
+Status: early development. What exists is the benchmark harness and a retriever
+that deliberately returns nothing, so every number below the header is a zero.
+The contract is in [`AGENTS.md`](AGENTS.md) and the phase order in
+[`PLAN.md`](PLAN.md).
 
 ## What it is for
 
@@ -22,10 +23,13 @@ did not help get deleted rather than kept behind a flag. And the cost that
 matters is the context budget of the next turn, so precision is worth more than
 recall.
 
-## Building it
+## Running it
 
-Nothing to build or install yet. When there is, the instructions live in
-`AGENTS.md` next to everything else an assistant needs.
+`uv run bume bench` scores every suite under `benchmarks/` and prints a table per
+language group; `uv run --group dev pytest -q` runs the tests. The corpus is
+cross-lingual on purpose — Turkish queries against English memories are the
+normal case here, not an edge one — so the table breaks the groups out rather
+than pooling them into an average that would hide the case most likely to fail.
 
 ## License
 

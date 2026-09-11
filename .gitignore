@@ -1,3 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+dist/
+*.egg-info/
+
 # Per-tool assistant instruction files stay local. AGENTS.md is the contract.
 CLAUDE.md
 CURSOR.md
