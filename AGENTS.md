@@ -262,9 +262,21 @@ per vendor has already lost the thing they were meant to protect.
 
 bume-rag is a retrieval-augmented memory store: a Python library in
 `src/bume_rag` with a `bume` CLI on top. `uv run --group dev pytest -q` runs the
-tests in about 0.34 s, and `uv run bume bench` scores every suite under
-`benchmarks/` in about 0.11 s. Both grow as phases land; keep the timing here
-honest, and add a phase's command in the same change as its code.
+tests in about 0.44 s, and `uv run bume bench` scores every suite under
+`benchmarks/` in about 0.14 s offline or 0.20 s against a warm embedding cache.
+Both grow as phases land; keep the timing here honest, and add a phase's command
+in the same change as its code.
+
+No test may touch the network. The embedding endpoint rate-limits under load —
+embedding 212 texts took six backoffs and 278 s — so a test that reaches it is
+slow, flaky, and someone else's quota. `urlopen` gets patched instead; a test
+that unexpectedly starts hitting the network shows up as the suite jumping from
+tenths of a second to seconds.
+
+The cloud embedder is the default because it retrieves best, and the offline
+hashing embedder exists so a first run works without a key and CI has a dense
+code path. It matches spelling rather than meaning: never compare a retrieval
+method against it and call the result a finding.
 
 `PLAN.md` holds the phase order and the reason for it. Read it before adding a
 retrieval method, because most of what looks worth adding is listed there as

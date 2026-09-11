@@ -4,9 +4,9 @@ A retrieval-augmented memory tool: a Python library with a CLI on top, meant to
 be the store an agent reads from at the start of a turn and writes to at the end
 of it.
 
-Status: early development. What exists is the benchmark harness and a retriever
-that deliberately returns nothing, so every number below the header is a zero.
-The contract is in [`AGENTS.md`](AGENTS.md) and the phase order in
+Status: early development. What exists is a benchmark harness and a hybrid
+retriever — BM25 over SQLite FTS5 fused with embeddings by reciprocal rank. The
+contract is in [`AGENTS.md`](AGENTS.md) and the phase order in
 [`PLAN.md`](PLAN.md).
 
 ## What it is for
@@ -26,10 +26,20 @@ recall.
 ## Running it
 
 `uv run bume bench` scores every suite under `benchmarks/` and prints a table per
-language group; `uv run --group dev pytest -q` runs the tests. The corpus is
-cross-lingual on purpose — Turkish queries against English memories are the
-normal case here, not an edge one — so the table breaks the groups out rather
-than pooling them into an average that would hide the case most likely to fail.
+language group; `uv run --group dev pytest -q` runs the tests. Neither needs
+configuration to start: without an API key the dense channel falls back to an
+offline stand-in and says so.
+
+That fallback is a convenience, not the product. Set `OMNIROUTE_API_KEY` and the
+default becomes a real embedding model, which on the seed suite is the difference
+between ndcg@10 of 0.8519 and 0.9590 pooled, and 0.6389 against 0.8770 on the
+cross-lingual group. Embeddings are cached in `~/.bume`, so the cost is paid once.
+
+The corpus is cross-lingual on purpose — Turkish queries against English memories
+are the normal case here, not an edge one — so the table breaks the groups out
+rather than pooling them into an average that would hide the case most likely to
+fail. There is no runtime dependency: FTS5 ships with SQLite and an embedding
+call is one HTTP request.
 
 ## License
 
