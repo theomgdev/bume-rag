@@ -2,7 +2,8 @@
 
 Instructions for any assistant working in this repository, human or otherwise.
 Read it before you touch anything. It is short on purpose: extra instructions
-have been measured to make the ones that matter harder to follow.
+have been measured to make the ones that matter harder to follow. Everything
+above "Project specifics" comes from [Keel](https://github.com/theomgdev/keel).
 
 ## Rule one: maximise the value to garbage ratio
 
@@ -259,11 +260,30 @@ per vendor has already lost the thing they were meant to protect.
 
 ## Project specifics
 
-Replace this section with what is true of your project: how to build it, how to
-run its tests and how long that takes, the conventions a newcomer would violate
-by accident, and anything about it that would surprise a careful reader. Delete
-the section rather than leave it empty. A fact about this repository changes
-what an assistant does next. A paragraph of philosophy does not.
+bume-rag is a retrieval-augmented memory store: a Python library with a CLI on
+top. There is no source tree yet, so there is no build or test command to give —
+add both here in the same change that adds the first module, and say how long a
+run takes.
+
+The thing being optimised is the context budget of the turn that reads from the
+store, which means precision beats recall: a retrieved chunk that does not
+change the next decision costs the same as a wrong one. Judge a retrieval change
+by what it does to that, not by how much it returns.
+
+No retrieval method enters on the strength of the paper that proposed it. It
+lands behind a benchmark on this project's own data, with the numbers in the
+commit message, and if it does not beat what is already there it does not land.
+Two methods do not both stay around behind a flag once the comparison has
+answered — delete the loser.
+
+Embedding models and rerankers pull in large dependencies and want the GPU.
+There is one RTX 3060 Ti with 8 GB and somebody else may be training on it, so
+check `nvidia-smi` before loading a model, and keep anything that runs in CI
+able to run on CPU.
+
+Development is on Windows. `python` on PATH is 3.13.1 at `C:\Python313`, two
+other interpreters are also on PATH, and `uv` 0.11.14 is available — check which
+interpreter answered before concluding a package is missing.
 
 ## Is this working?
 
