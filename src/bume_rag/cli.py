@@ -7,9 +7,10 @@ from pathlib import Path
 
 from bume_rag import bench
 from bume_rag.corpus import load_suite
+from bume_rag.lexical import LexicalRetriever
 from bume_rag.retriever import NoOpRetriever
 
-RETRIEVERS = {"no-op": NoOpRetriever}
+RETRIEVERS = {"no-op": NoOpRetriever, "lexical": LexicalRetriever}
 DEFAULT_SUITES = Path("benchmarks")
 
 
@@ -34,7 +35,7 @@ def main(argv: list[str] | None = None) -> int:
     b = sub.add_parser("bench", help="run a retriever over benchmark suites")
     b.add_argument("suite", nargs="*", help="suite directories (default: every one under benchmarks/)")
     b.add_argument("-k", type=int, default=10, help="cut-off for recall and delivery (default 10)")
-    b.add_argument("--retriever", choices=sorted(RETRIEVERS), default="no-op")
+    b.add_argument("--retriever", choices=sorted(RETRIEVERS), default="lexical")
     b.set_defaults(func=_bench)
 
     args = parser.parse_args(argv)

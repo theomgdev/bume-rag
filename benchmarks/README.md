@@ -11,8 +11,16 @@ otherwise, so mislabelling a group means mislabelling a memory rather than
 quietly tuning the split.
 
 `seed` is a small suite over real notes from this machine, written to exercise
-the harness rather than to rank anything: thirteen memories, nineteen queries,
-all three groups plus two abstention cases. It is not a measurement and no
-retrieval claim should ever rest on it. The two suites that decide things —
-LongMemEval for comparability and roughly a hundred hand-labelled queries over
-real codemem notes for our own workload — arrive with Phase 1.
+the harness rather than to rank anything: thirteen memories, twenty queries, all
+three groups plus two abstention cases. It is not a measurement and no retrieval
+claim should ever rest on it — but it is written in real orthography, because an
+ASCII-typed Turkish corpus scored a perfect 1.0 while the lexical channel was
+shredding every accented word. One query repeats another without diacritics,
+which is how people actually type, and both must hit.
+
+The suites that decide things — LongMemEval for comparability, and hand-labelled
+queries over real codemem notes for our own workload — are not here yet. All 212
+real notes on this machine are in English, so the `cross` group can be harvested
+by writing Turkish queries against them while `tr-tr` memories have to be
+authored. That makes `cross` the group that mirrors actual use and `tr-tr` the
+least representative one.
