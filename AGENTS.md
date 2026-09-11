@@ -273,10 +273,16 @@ slow, flaky, and someone else's quota. `urlopen` gets patched instead; a test
 that unexpectedly starts hitting the network shows up as the suite jumping from
 tenths of a second to seconds.
 
-The cloud embedder is the default because it retrieves best, and the offline
-hashing embedder exists so a first run works without a key and CI has a dense
-code path. It matches spelling rather than meaning: never compare a retrieval
-method against it and call the result a finding.
+There are three embedders and `auto` picks the first that works: the local
+encoder when `bume-rag[local]` is installed, the cloud when a key is reachable,
+and the hashing stand-in otherwise. The stand-in exists so a first run works and
+CI has a dense code path — it matches spelling rather than meaning, so never
+compare a retrieval method against it and call the result a finding.
+
+The base install has no dependencies. Weights, torch and the hub client arrive
+only with the `local` extra, and cached weights must never make a network call:
+`ensure_weights` asks for a local-only snapshot first and falls through to a
+download with a progress notice.
 
 `PLAN.md` holds the phase order and the reason for it. Read it before adding a
 retrieval method, because most of what looks worth adding is listed there as

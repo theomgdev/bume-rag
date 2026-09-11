@@ -19,6 +19,7 @@ from bume_rag.embedding import (
 )
 from bume_rag.fusion import RRFRetriever
 from bume_rag.lexical import LexicalRetriever
+from bume_rag.local import DEFAULT_REPO, LocalEmbedder
 
 DEFAULT_SUITES = Path("benchmarks")
 CACHE_PATH = Path.home() / ".bume" / "embeddings.json"
@@ -26,27 +27,47 @@ CACHE_PATH = Path.home() / ".bume" / "embeddings.json"
 CHANNELS = ("hybrid", "lexical", "dense", "no-op")
 
 
-def build_embedder(args: argparse.Namespace) -> tuple[object, str | None]:
-    """Cloud when a key is reachable, hashing when it is not.
+def local_is_available() -> bool:
+    """Whether the optional dependency is installed, not whether weights exist.
 
-    The fallback is deliberately loud: it keeps a first run working, but its
-    retrieval is bad enough that silently landing on it would look like the
-    project failing rather than the key being absent.
+    Weights download on first use; the import is the thing that cannot be fixed
+    at runtime.
+    """
+    from importlib.util import find_spec
+
+    return find_spec("sentence_transformers") is not None
+
+
+def build_embedder(args: argparse.Namespace) -> tuple[object, str | None]:
+    """Local first, because it needs no key and retrieves well.
+
+    `auto` prefers the local encoder when its dependency is installed, falls
+    back to the cloud when a key is reachable, and lands on hashing only when
+    neither is available. The hashing fallback is deliberately loud: it keeps a
+    first run working, but silently landing on it would look like the project
+    retrieving badly rather than nothing being configured.
     """
     if args.embedder == "hashing":
         return HashingEmbedder(), None
-    if find_api_key() is None:
-        if args.embedder == "cloud":
+    if args.embedder == "local":
+        return LocalEmbedder(repo=args.model_local, dimensions=args.dimensions), None
+    if args.embedder == "cloud":
+        if find_api_key() is None:
             raise SystemExit(
                 f"--embedder cloud needs {KEY_VARIABLE} in the environment"
                 f" or in ~/.omniroute/.env"
             )
-        return HashingEmbedder(), (
-            f"no {KEY_VARIABLE} found, so the dense channel is the offline hashing"
-            f" stand-in. It matches spelling rather than meaning and cannot cross a"
-            f" language boundary; set the key for real numbers."
-        )
-    return OpenAIEmbedder(model=args.model, cache=EmbeddingCache(CACHE_PATH)), None
+        return OpenAIEmbedder(model=args.model, cache=EmbeddingCache(CACHE_PATH)), None
+    if local_is_available():
+        return LocalEmbedder(repo=args.model_local, dimensions=args.dimensions), None
+    if find_api_key() is not None:
+        return OpenAIEmbedder(model=args.model, cache=EmbeddingCache(CACHE_PATH)), None
+    return HashingEmbedder(), (
+        "no local encoder installed and no API key found, so the dense channel is"
+        " the offline hashing stand-in. It matches spelling rather than meaning and"
+        " cannot cross a language boundary. Install bume-rag[local] for the real"
+        f" encoder, or set {KEY_VARIABLE} to use the cloud."
+    )
 
 
 def build_retriever(args: argparse.Namespace):
@@ -89,11 +110,18 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--retriever", choices=CHANNELS, default="hybrid")
     b.add_argument(
         "--embedder",
-        choices=("auto", "cloud", "hashing"),
+        choices=("auto", "local", "cloud", "hashing"),
         default="auto",
-        help="auto uses the cloud when a key is reachable and hashing when it is not",
+        help="auto prefers local, then cloud, then the offline stand-in",
     )
-    b.add_argument("--model", default=DEFAULT_MODEL)
+    b.add_argument("--model", default=DEFAULT_MODEL, help="cloud embedding model id")
+    b.add_argument("--model-local", default=DEFAULT_REPO, help="local encoder repo id")
+    b.add_argument(
+        "--dimensions",
+        type=int,
+        default=None,
+        help="truncate embeddings to this many dimensions (default: the model's own)",
+    )
     b.set_defaults(func=_bench)
 
     args = parser.parse_args(argv)

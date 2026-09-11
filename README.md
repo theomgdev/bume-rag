@@ -30,10 +30,11 @@ language group; `uv run --group dev pytest -q` runs the tests. Neither needs
 configuration to start: without an API key the dense channel falls back to an
 offline stand-in and says so.
 
-That fallback is a convenience, not the product. Set `OMNIROUTE_API_KEY` and the
-default becomes a real embedding model, which on the seed suite is the difference
-between ndcg@10 of 0.8519 and 0.9590 pooled, and 0.6389 against 0.8770 on the
-cross-lingual group. Embeddings are cached in `~/.bume`, so the cost is paid once.
+That fallback is a convenience, not the product. `pip install bume-rag[local]`
+gets a real encoder — harrier-oss-v1, fetched on first use with a progress bar
+and never contacted again once cached — or set `OMNIROUTE_API_KEY` to use a
+hosted one. `--embedder` chooses explicitly and `--dimensions` truncates the
+vector when storage matters more than the last point of accuracy.
 
 The corpus is cross-lingual on purpose — Turkish queries against English memories
 are the normal case here, not an edge one — so the table breaks the groups out

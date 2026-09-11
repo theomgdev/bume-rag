@@ -39,10 +39,20 @@ class DenseRetriever:
         raw = self.embedder.embed([suite.memories[i].text for i in self.ids])
         self.vectors = [normalise(v) for v in raw]
 
+    def embed_query(self, text: str) -> list[float]:
+        """Instruction-tuned encoders embed a query differently from a document.
+
+        Asking the embedder rather than assuming symmetry: harrier prepends an
+        instruction to queries and nothing to documents, and encoding both the
+        same way is the shape of bug that costs recall without ever failing.
+        """
+        embed = getattr(self.embedder, "embed_queries", self.embedder.embed)
+        return embed([text])[0]
+
     def search(self, query: Query, limit: int) -> list[Retrieved]:
         if not self.vectors:
             return []
-        q = normalise(self.embedder.embed([query.text])[0])
+        q = normalise(self.embed_query(query.text))
         scored = (
             (sum(a * b for a, b in zip(q, v)), memory_id)
             for v, memory_id in zip(self.vectors, self.ids)

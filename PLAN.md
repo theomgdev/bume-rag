@@ -174,17 +174,27 @@ here is modest.
 
 ## Phase 3.5 — GGUF
 
-The local encoder in Phase 1 is a torch checkpoint, which means a CUDA-sized
+The local encoder in Phase 1 is a torch checkpoint, which means a multi-gigabyte
 install to run a 0.6B model and no path onto hardware torch does not serve.
-`llama.cpp` runtimes take GGUF, and quantisation makes the model small enough to
-be incidental: Q8_0 is 610 MiB and Q4_K_M 378 MiB against 1.12 GiB for BF16.
+`llama.cpp` runtimes take GGUF, and quantisation makes the weights incidental:
+Q8_0 is 610 MiB against 1.12 GiB for BF16.
 
-Which quantisation ships is a measurement on our suites, not a size preference.
-Published throughput tables say nothing about retrieval quality, and the two
-questions come apart — a quant can lose almost nothing in perplexity while moving
-enough in embedding space to reorder a ranked list. The dense channel is scored
-against every candidate quant and the one that holds its numbers wins; the rest
-are not kept as options.
+GGUF is the second backend and ONNX is not a third. Both would need the same
+work — a runtime, a tokeniser path, last-token pooling reimplemented, and a
+correctness check against the torch vectors — and two of them means every future
+change is made three times. GGUF wins because it is where quantisation below
+8-bit actually lives, because `llama.cpp` reaches CPUs and GPUs that
+onnxruntime's provider matrix does not, and because it is the format the person
+running this already uses. ONNX earns its place if something concrete demands
+it, not because it exists.
+
+Q8_0 is the default without a sweep. Quantisation error at 8 bits is small
+enough to treat as settled — the interesting question is whether it holds for
+*embeddings*, where the output is a 1024-dimensional direction rather than a
+token choice, so one comparison against the torch vectors on our suites answers
+it. If Q8_0 holds, it ships and nothing else is measured. If it does not, that
+is a finding worth the time. Producing a table of every quantisation is
+leaderboard work and this is not a leaderboard.
 
 The instruction prefix and last-token pooling have to survive the port, because
 a runtime that pools differently produces vectors that look fine and rank wrong.
